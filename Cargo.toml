@@ -1,0 +1,11 @@
+[package]
+name = "podinator"
+description = "A program to manage my podcast downloading and listening."
+version = "0.1.0"
+authors = ["Andreas Ekeroot <andeke@gmail.com>"]
+license = "BSD-3-Clause"
+
+[dependencies]
+chrono = "0.3"
+reqwest = "0.5.1"
+xml-rs = "0.4"
