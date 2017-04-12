@@ -1,10 +1,10 @@
-use chrono::{ DateTime, TimeZone, UTC };
+use chrono::{DateTime, TimeZone, UTC};
 use reqwest;
 use std::collections::HashMap;
-use std::fs::{ File, create_dir_all };
-use std::io::{ Read, Write };
+use std::fs::{File, create_dir_all};
+use std::io::{Read, Write};
 use std::path::Path;
-use xml::reader::{ ParserConfig, XmlEvent };
+use xml::reader::{ParserConfig, XmlEvent};
 
 #[derive(Clone, Copy)]
 enum States {
@@ -12,31 +12,31 @@ enum States {
     ParsingItem,
     ParsingTitle,
     ParsingPubDate,
-    Other
+    Other,
 }
 
 #[derive(Debug)]
 pub struct Episode {
-    title:      String,
-    url:        String,
-    pub_date:   DateTime<UTC>,
+    title: String,
+    url: String,
+    pub_date: DateTime<UTC>,
     downloaded: Option<DateTime<UTC>>,
-    listened:   Option<DateTime<UTC>>,
+    listened: Option<DateTime<UTC>>,
 }
 
 #[derive(Debug)]
 pub struct Podcast {
-    title:        String,
-    url:          String,
-    episodes:     Vec<Episode>,
+    title: String,
+    url: String,
+    episodes: Vec<Episode>,
     last_checked: DateTime<UTC>,
 }
 
 impl Podcast {
     pub fn new(title: &str, url: &str) -> Podcast {
         Podcast {
-            title:    title.to_string(),
-            url:      url.to_string(),
+            title: title.to_string(),
+            url: url.to_string(),
             episodes: Vec::new(),
             // Epoch
             last_checked: UTC.timestamp(0, 0),
@@ -45,12 +45,12 @@ impl Podcast {
 
     /// Get the RSS file associated with an URL and update this podcast accordingly.
     pub fn get_rss(&mut self) -> Result<(), String> {
-        let client   = reqwest::Client::new().unwrap();
+        let client = reqwest::Client::new().unwrap();
         let response = client.get(&self.url).send().unwrap();
         if response.status().is_success() {
             let mut current_state = States::Other;
-            let mut part_hash     = HashMap::new();
-            let mut pc_title      = String::new();
+            let mut part_hash = HashMap::new();
+            let mut pc_title = String::new();
             let reader = ParserConfig::new()
                 .trim_whitespace(true)
                 .whitespace_to_characters(true)
@@ -60,7 +60,7 @@ impl Podcast {
                 match e {
                     Ok(XmlEvent::StartElement { name, attributes, .. }) => {
                         match (name.local_name.to_lowercase().as_ref(), current_state) {
-                            ("item",      States::Other)       => current_state = States::ParsingItem,
+                            ("item", States::Other) => current_state = States::ParsingItem,
                             ("enclosure", States::ParsingItem) => {
                                 part_hash.insert("url", attributes
                                     .iter()
@@ -68,61 +68,64 @@ impl Podcast {
                                     .map(|a| a.value.to_owned())
                                     .expect("I couldn't find an URL in this enclosure."));
                             }
-                            ("title", States::ParsingItem) =>
-                                current_state = States::ParsingTitle,
+                            ("title", States::ParsingItem) => current_state = States::ParsingTitle,
 
-                            ("title", States::Other) =>
-                                current_state = States::ParsingPodcastTitle,
+                            ("title", States::Other) => current_state = States::ParsingPodcastTitle,
 
-                            ("pubdate", States::ParsingItem) =>
-                                current_state = States::ParsingPubDate,
-                            _ => ()
+                            ("pubdate", States::ParsingItem) => {
+                                current_state = States::ParsingPubDate
+                            }
+                            _ => (),
                         }
                     }
                     Ok(XmlEvent::EndElement { name }) => {
                         match (name.local_name.to_lowercase().as_ref(), current_state) {
-                            ("item", States::ParsingItem)       => {
+                            ("item", States::ParsingItem) => {
                                 println!("This is the current part_hash: {:?}", part_hash);
-                                { // Scope cheat to let me use the closure getter.
+                                {
+                                    // Scope cheat to let me use the closure getter.
                                     let getter = |key| part_hash.get(key).unwrap();
-                                    self.episodes.push(new_episode(
-                                            getter("title"),
-                                            getter("url"),
-                                            str_to_date(getter("pub_date")),
-                                    ));
+                                    self.episodes
+                                        .push(new_episode(getter("title"),
+                                                          getter("url"),
+                                                          str_to_date(getter("pub_date"))));
                                 }
                                 part_hash.clear();
                                 current_state = States::Other;
                             }
-                            ("title", States::ParsingTitle)        => current_state = States::ParsingItem,
+                            ("title", States::ParsingTitle) => current_state = States::ParsingItem,
                             ("title", States::ParsingPodcastTitle) => current_state = States::Other,
-                            ("pubdate", States::ParsingPubDate)    => current_state = States::ParsingItem,
-                            _ => ()
+                            ("pubdate", States::ParsingPubDate) => {
+                                current_state = States::ParsingItem
+                            }
+                            _ => (),
                         }
                     }
                     Ok(XmlEvent::Characters(s)) => {
                         match current_state {
-                            States::ParsingTitle   => {
-                                part_hash.insert("title",    s);
-                            },
+                            States::ParsingTitle => {
+                                part_hash.insert("title", s);
+                            }
                             States::ParsingPubDate => {
                                 part_hash.insert("pub_date", s);
-                            },
+                            }
                             States::ParsingPodcastTitle => {
                                 pc_title = s;
                             }
-                            _                      => (),
+                            _ => (),
                         }
                     }
                     Err(e) => println!("Error: {}", e),
-                    _      => ()
+                    _ => (),
                 }
             }
-            self.title        = pc_title.to_string();
+            self.title = pc_title.to_string();
             self.last_checked = UTC::now();
             Ok(())
         } else {
-            Err(format!("We got a strange status: {:?} when fetching URL: {:?}", response.status(), &self.url))
+            Err(format!("We got a strange status: {:?} when fetching URL: {:?}",
+                        response.status(),
+                        &self.url))
         }
     }
 
@@ -143,13 +146,15 @@ impl Episode {
             let file_name = self.url
                 .rsplit("/")
                 .next()
-                .expect(&format!("Your URL doesn't contain any slashes, strange, eh? {:?}", self.url));
+                .expect(&format!("Your URL doesn't contain any slashes, strange, eh? {:?}",
+                                 self.url));
             println!("Downloading: {:?} from {:?}", self.title, self.url);
-            let mut web = reqwest::get(&self.url)
-                .expect(&format!("Couldn't find url: {:?}", self.url));
+            let mut web = reqwest::get(&self.url).expect(&format!("Couldn't find url: {:?}",
+                                                                  self.url));
             create_dir_all(base).unwrap();
-            let p        = base.join(Path::new(file_name));
-            let mut f    = File::create(&p).expect(&format!("Unable to create file with path: {:?}", &p));
+            let p = base.join(Path::new(file_name));
+            let mut f = File::create(&p).expect(&format!("Unable to create file with path: {:?}",
+                                                         &p));
             let mut buf = Vec::new();
             web.read_to_end(&mut buf).unwrap();
             f.write_all(&buf).unwrap();
@@ -175,4 +180,3 @@ fn str_to_date(s: &str) -> DateTime<UTC> {
         .expect(&format!("That was not the correct type of date: {:?}", s))
         .with_timezone(&UTC)
 }
-
