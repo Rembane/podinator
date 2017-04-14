@@ -63,18 +63,14 @@ impl Podcast {
                             ("item", States::Other) => current_state = States::ParsingItem,
                             ("enclosure", States::ParsingItem) => {
                                 part_hash.insert("url", attributes
-                                    .iter()
+                                    .into_iter()
                                     .find(|a| a.name.local_name == "url")
                                     .map(|a| a.value.to_owned())
                                     .expect("I couldn't find an URL in this enclosure."));
                             }
                             ("title", States::ParsingItem) => current_state = States::ParsingTitle,
-
                             ("title", States::Other) => current_state = States::ParsingPodcastTitle,
-
-                            ("pubdate", States::ParsingItem) => {
-                                current_state = States::ParsingPubDate
-                            }
+                            ("pubdate", States::ParsingItem) => current_state = States::ParsingPubDate,
                             _ => (),
                         }
                     }
@@ -86,7 +82,7 @@ impl Podcast {
                                     // Scope cheat to let me use the closure getter.
                                     let getter = |key| part_hash.get(key).unwrap();
                                     self.episodes
-                                        .push(new_episode(getter("title"),
+                                        .push(Episode::new(getter("title"),
                                                           getter("url"),
                                                           str_to_date(getter("pub_date"))));
                                 }
@@ -140,6 +136,17 @@ impl Podcast {
 }
 
 impl Episode {
+    /// Somekind of constructor I suppose.
+    fn new(title: &str, url: &str, pub_date: DateTime<UTC>) -> Episode {
+        Episode {
+            title: title.to_string(),
+            url: url.to_string(),
+            pub_date: pub_date,
+            downloaded: None,
+            listened: None,
+        }
+    }
+
     /// Download this episode if it hasn't already been downloaded.
     pub fn download(&mut self, base: &Path) {
         if self.downloaded.is_none() {
@@ -162,16 +169,6 @@ impl Episode {
         } else {
             println!("This episode has already been downloaded. {:?}", self.title);
         }
-    }
-}
-
-fn new_episode(title: &str, url: &str, pub_date: DateTime<UTC>) -> Episode {
-    Episode {
-        title: title.to_string(),
-        url: url.to_string(),
-        pub_date: pub_date,
-        downloaded: None,
-        listened: None,
     }
 }
 
