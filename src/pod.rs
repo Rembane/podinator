@@ -99,15 +99,9 @@ impl Podcast {
                     }
                     Ok(XmlEvent::Characters(s)) => {
                         match current_state {
-                            States::ParsingTitle => {
-                                part_hash.insert("title", s);
-                            }
-                            States::ParsingPubDate => {
-                                part_hash.insert("pub_date", s);
-                            }
-                            States::ParsingPodcastTitle => {
-                                pc_title = s;
-                            }
+                            States::ParsingTitle => part_hash.insert("title", s),
+                            States::ParsingPubDate => part_hash.insert("pub_date", s),
+                            States::ParsingPodcastTitle => { pc_title = s; }
                             _ => (),
                         }
                     }
