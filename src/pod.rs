@@ -1,5 +1,6 @@
 use chrono::{DateTime, TimeZone, UTC};
 use reqwest;
+use itertools::Itertools;
 use quick_xml::reader::Reader;
 use quick_xml::events::Event;
 use std::borrow::Borrow;
@@ -7,7 +8,6 @@ use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 use std::io::{BufReader, Read, Write};
 use std::path::Path;
-
 
 #[derive(Clone, Copy)]
 enum States {
@@ -131,7 +131,7 @@ impl Podcast {
         println!("Downloading podcast: {:?}", self.title);
         let p = Path::new(&self.title);
         for e in self.episodes.iter_mut() {
-            e.download(p);
+            e.download(p, &self.title);
         }
     }
 }
@@ -149,18 +149,23 @@ impl Episode {
     }
 
     /// Download this episode if it hasn't already been downloaded.
-    pub fn download(&mut self, base: &Path) {
+    pub fn download(&mut self, base: &Path, podcast_title: &str) {
         if self.downloaded.is_none() {
-            let file_name = self.url
-                .rsplit("/")
-                .next()
-                .expect(&format!("Your URL doesn't contain any slashes, strange, eh? {:?}",
-                                 self.url));
+            let file_name = [
+                podcast_title,
+                &self.pub_date.format("%FT%R").to_string(),
+                self.url
+                    .rsplit("/")
+                    .next()
+                    .expect(&format!("Your URL doesn't contain any slashes, strange, eh? {:?}",
+                                     self.url))
+            ].into_iter().join("_");
+
             println!("Downloading: {:?} from {:?}", self.title, self.url);
             let mut web = reqwest::get(&self.url).expect(&format!("Couldn't find url: {:?}",
                                                                   self.url));
             create_dir_all(base).unwrap();
-            let p = base.join(Path::new(file_name));
+            let p = base.join(Path::new(&file_name));
             let mut f = File::create(&p).expect(&format!("Unable to create file with path: {:?}",
                                                          &p));
             let mut buf = Vec::new();

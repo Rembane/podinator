@@ -7,5 +7,6 @@ license = "BSD-3-Clause"
 
 [dependencies]
 chrono = "0.3"
+itertools = "0.6.0"
 reqwest = "0.5.1"
 quick-xml = "0.7.0"
