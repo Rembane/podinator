@@ -25,6 +25,7 @@ pub struct Episode {
     pub_date: DateTime<UTC>,
     downloaded: Option<DateTime<UTC>>,
     listened: Option<DateTime<UTC>>,
+    local_file_name: Option<String>,
 }
 
 #[derive(Debug)]
@@ -137,7 +138,6 @@ impl Podcast {
 }
 
 impl Episode {
-    /// Somekind of constructor I suppose.
     fn new(title: &str, url: &str, pub_date: DateTime<UTC>) -> Episode {
         Episode {
             title: title.to_string(),
@@ -145,6 +145,7 @@ impl Episode {
             pub_date: pub_date,
             downloaded: None,
             listened: None,
+            local_file_name: None,
         }
     }
 
@@ -179,6 +180,7 @@ impl Episode {
                 }
             }
             self.downloaded = Some(UTC::now());
+            self.local_file_name = Some(file_name);
         } else {
             println!("This episode has already been downloaded. {:?}", self.title);
         }
