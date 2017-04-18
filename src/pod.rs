@@ -168,9 +168,16 @@ impl Episode {
             let p = base.join(Path::new(&file_name));
             let mut f = File::create(&p).expect(&format!("Unable to create file with path: {:?}",
                                                          &p));
-            let mut buf = Vec::new();
-            web.read_to_end(&mut buf).unwrap();
-            f.write_all(&buf).unwrap();
+            let mut buf = Vec::with_capacity(1024 * 1024); // One MB chunks!
+            loop {
+                match web.read(&mut buf) {
+                    Ok(0) => break,
+                    Ok(_) => {
+                        f.write(&buf).unwrap();
+                    }
+                    Err(_) => break,
+                }
+            }
             self.downloaded = Some(UTC::now());
         } else {
             println!("This episode has already been downloaded. {:?}", self.title);
