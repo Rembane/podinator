@@ -1,10 +1,13 @@
 use chrono::{DateTime, TimeZone, UTC};
 use reqwest;
+use quick_xml::reader::Reader;
+use quick_xml::events::Event;
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
-use std::io::{Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::path::Path;
-use xml::reader::{ParserConfig, XmlEvent};
+
 
 #[derive(Clone, Copy)]
 enum States {
@@ -51,31 +54,43 @@ impl Podcast {
             let mut current_state = States::Other;
             let mut part_hash = HashMap::new();
             let mut pc_title = String::new();
-            let reader = ParserConfig::new()
-                .trim_whitespace(true)
-                .whitespace_to_characters(true)
-                .ignore_comments(true)
-                .create_reader(response);
-            for e in reader.into_iter() {
-                match e {
-                    Ok(XmlEvent::StartElement { name, attributes, .. }) => {
-                        match (name.local_name.to_lowercase().as_ref(), current_state) {
+            let mut reader = Reader::from_reader(BufReader::new(response));
+            reader.trim_text(true);
+            let mut buf = Vec::new();
+            loop {
+                match reader.read_event(&mut buf) {
+                    Ok(Event::Start(ref e)) => {
+                        match (reader.decode(e.name()).to_lowercase().as_str(), current_state) {
                             ("item", States::Other) => current_state = States::ParsingItem,
-                            ("enclosure", States::ParsingItem) => {
-                                part_hash.insert("url", attributes
-                                    .into_iter()
-                                    .find(|a| a.name.local_name == "url")
-                                    .map(|a| a.value.to_owned())
-                                    .expect("I couldn't find an URL in this enclosure."));
-                            }
                             ("title", States::ParsingItem) => current_state = States::ParsingTitle,
                             ("title", States::Other) => current_state = States::ParsingPodcastTitle,
                             ("pubdate", States::ParsingItem) => current_state = States::ParsingPubDate,
                             _ => (),
                         }
                     }
-                    Ok(XmlEvent::EndElement { name }) => {
-                        match (name.local_name.to_lowercase().as_ref(), current_state) {
+                    Ok(Event::Empty(ref e)) => {
+                        match (reader.decode(e.name()).to_lowercase().as_str(), current_state) {
+                            ("enclosure", States::ParsingItem) => {
+                                part_hash.insert("url", e.attributes()
+                                                 .map(|a| a.unwrap())
+                                                 .find(|a| a.key == b"url")
+                                                 .map(|a| reader.decode(a.unescaped_value().unwrap().borrow()).into_owned())
+                                                 .expect("I couldn't find an URL in this enclosure."));
+                            }
+                            _ => (),
+                        }
+                    }
+                    Ok(Event::Text(e)) => {
+                        let txt = e.unescape_and_decode(&reader).unwrap();
+                        match current_state {
+                            States::ParsingTitle => { part_hash.insert("title", txt); },
+                            States::ParsingPubDate => { part_hash.insert("pub_date", txt); },
+                            States::ParsingPodcastTitle => { pc_title = txt; },
+                            _ => (),
+                        }
+                    }
+                    Ok(Event::End(e)) => {
+                        match (reader.decode(e.name()).to_lowercase().as_str(), current_state) {
                             ("item", States::ParsingItem) => {
                                 println!("This is the current part_hash: {:?}", part_hash);
                                 {
@@ -91,23 +106,15 @@ impl Podcast {
                             }
                             ("title", States::ParsingTitle) => current_state = States::ParsingItem,
                             ("title", States::ParsingPodcastTitle) => current_state = States::Other,
-                            ("pubdate", States::ParsingPubDate) => {
-                                current_state = States::ParsingItem
-                            }
+                            ("pubdate", States::ParsingPubDate) => current_state = States::ParsingItem,
                             _ => (),
                         }
                     }
-                    Ok(XmlEvent::Characters(s)) => {
-                        match current_state {
-                            States::ParsingTitle => part_hash.insert("title", s),
-                            States::ParsingPubDate => part_hash.insert("pub_date", s),
-                            States::ParsingPodcastTitle => { pc_title = s; }
-                            _ => (),
-                        }
-                    }
-                    Err(e) => println!("Error: {}", e),
+                    Ok(Event::Eof) => break,
+                    Err(e) => println!("Error at position: {} {:?}", reader.buffer_position(), e),
                     _ => (),
                 }
+                buf.clear();
             }
             self.title = pc_title.to_string();
             self.last_checked = UTC::now();

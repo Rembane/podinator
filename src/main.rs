@@ -1,6 +1,6 @@
 extern crate chrono;
 extern crate reqwest;
-extern crate xml;
+extern crate quick_xml;
 
 mod pod;
 

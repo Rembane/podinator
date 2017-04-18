@@ -8,4 +8,4 @@ license = "BSD-3-Clause"
 [dependencies]
 chrono = "0.3"
 reqwest = "0.5.1"
-xml-rs = "0.4"
+quick-xml = "0.7.0"
