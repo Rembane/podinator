@@ -3,12 +3,10 @@
 use rmps::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 use std::fs::{File};
-use std::io::{BufReader, Read, Write};
 use std::path::Path;
-use std::vec::IntoIter;
 
 use errors::*;
-use pod::{Episode, Podcast};
+use pod::{Podcast};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Database(Vec<Podcast>);

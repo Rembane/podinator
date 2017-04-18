@@ -1,6 +1,5 @@
 use chrono::{DateTime, TimeZone, UTC};
 use reqwest;
-use itertools::Itertools;
 use quick_xml::reader::Reader;
 use quick_xml::events::Event;
 use std::borrow::Borrow;

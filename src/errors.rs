@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 error_chain! {
     foreign_links {
         Encoding(::rmps::encode::Error);

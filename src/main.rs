@@ -35,12 +35,18 @@ fn run() -> Result<()> {
         )
     ).get_matches();
 
-    let mut db = Database::from_file(Path::new("podcasts.db")).chain_err(|| "Something went terribly wrong when loading the database file.")?;
+    let db_path = Path::new("podcasts.db");
+    // If the database file doesn't exist, we create a new database.
+    let mut db = match Database::from_file(db_path) {
+        Ok(d) => d,
+        Err(_) => Database::new(),
+    };
 
     match matches.subcommand() {
         ("add", Some(matches)) => {
             let url = matches.value_of("URL").ok_or("Please supply a URL.")?;
             db.add(url);
+            db.to_file(db_path).chain_err(|| "Writing to database failed.")?;
         }
         ("list", Some(_)) => {
             for p in db.into_iter() {
@@ -56,9 +62,6 @@ fn run() -> Result<()> {
         (_, _) => {},
     }
     Ok(())
-//    let mut p = pod::Podcast::new(" ", "http://www.newrustacean.com/feed.xml");
-//    p.get_rss().unwrap();
-//    p.download();
 }
 
 fn main() {
