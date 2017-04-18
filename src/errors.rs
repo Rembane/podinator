@@ -7,13 +7,3 @@ error_chain! {
         IO(::std::io::Error);
     }
 }
-
-/*
-impl ::serde::de::Error for Error {
-    fn custom<T>(msg: T) -> Error
-        where T: Display
-    {
-        format!("{}", msg).into()
-    }
-}
-*/
