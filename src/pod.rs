@@ -9,6 +9,8 @@ use std::fs::{File, create_dir_all};
 use std::io::{BufReader, Read, Write};
 use std::path::Path;
 
+use errors::*;
+
 #[derive(Clone, Copy)]
 enum States {
     ParsingPodcastTitle,
@@ -18,7 +20,7 @@ enum States {
     Other,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Episode {
     title: String,
     url: String,
@@ -28,7 +30,7 @@ pub struct Episode {
     local_file_name: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Podcast {
     title: String,
     url: String,
@@ -48,7 +50,7 @@ impl Podcast {
     }
 
     /// Get the RSS file associated with an URL and update this podcast accordingly.
-    pub fn get_rss(&mut self) -> Result<(), String> {
+    pub fn get_rss(&mut self) -> Result<()> {
         let client = reqwest::Client::new().unwrap();
         let response = client.get(&self.url).send().unwrap();
         if response.status().is_success() {
@@ -121,19 +123,20 @@ impl Podcast {
             self.last_checked = UTC::now();
             Ok(())
         } else {
-            Err(format!("We got a strange status: {:?} when fetching URL: {:?}",
+            bail!(format!("We got a strange status: {:?} when fetching URL: {:?}",
                         response.status(),
                         &self.url))
         }
     }
 
     /// Download all episodes not already downloaded.
-    pub fn download(&mut self) {
+    pub fn download(&mut self) -> Result<()> {
         println!("Downloading podcast: {:?}", self.title);
         let p = Path::new(&self.title);
         for e in self.episodes.iter_mut() {
-            e.download(p, &self.title);
+            e.download(p, &self.title).chain_err(|| "Download failed.")?;
         }
+        Ok(())
     }
 }
 
@@ -150,22 +153,15 @@ impl Episode {
     }
 
     /// Download this episode if it hasn't already been downloaded.
-    pub fn download(&mut self, base: &Path, podcast_title: &str) {
+    pub fn download(&mut self, base: &Path, podcast_title: &str) -> Result<()> {
         if self.downloaded.is_none() {
-            let file_name = [
-                podcast_title,
-                &self.pub_date.format("%FT%R").to_string(),
-                self.url
-                    .rsplit("/")
-                    .next()
-                    .expect(&format!("Your URL doesn't contain any slashes, strange, eh? {:?}",
-                                     self.url))
-            ].into_iter().join("_");
-
+            let file_name = match self.url.rsplit("/").next() {
+                Some(s) => format!("{}_{}_{}", podcast_title, self.pub_date.format("%FT%R").to_string(), s),
+                None => bail!(format!("Your URL doesn't contain any slashes, strange, eh? {:?}", self.url)),
+            };
             println!("Downloading: {:?} from {:?}", self.title, self.url);
-            let mut web = reqwest::get(&self.url).expect(&format!("Couldn't find url: {:?}",
-                                                                  self.url));
-            create_dir_all(base).unwrap();
+            let mut web = reqwest::get(&self.url).chain_err(|| format!("Couldn't find url: {:?}", self.url))?;
+            create_dir_all(base)?;
             let p = base.join(Path::new(&file_name));
             let mut f = File::create(&p).expect(&format!("Unable to create file with path: {:?}",
                                                          &p));
@@ -184,6 +180,7 @@ impl Episode {
         } else {
             println!("This episode has already been downloaded. {:?}", self.title);
         }
+        Ok(())
     }
 }
 
