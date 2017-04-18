@@ -2,6 +2,7 @@
 
 extern crate chrono;
 #[macro_use] extern crate clap;
+extern crate core;
 #[macro_use] extern crate error_chain;
 extern crate itertools;
 extern crate quick_xml;

@@ -42,7 +42,12 @@ impl Database {
     pub fn download(&mut self) -> Result<()> {
         for mut p in self.0.iter_mut() {
             p.get_rss().chain_err(|| "Downloading RSS failed horribly.")?;
-            p.download().chain_err(|| "Downloading podcast failed horribly.")?;
+            println!("Downloading podcast: {:?}", p.title);
+            let podcast_title = p.title.clone();
+            let path = Path::new(&podcast_title);
+            for mut e in p.into_iter() {
+                e.download(path, &podcast_title).chain_err(|| "Podcast download failed.")?;
+            }
         }
         Ok(())
     }

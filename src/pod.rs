@@ -1,4 +1,5 @@
 use chrono::{DateTime, TimeZone, UTC};
+use core::slice;
 use reqwest;
 use quick_xml::reader::Reader;
 use quick_xml::events::Event;
@@ -31,7 +32,7 @@ pub struct Episode {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Podcast {
-    title: String,
+    pub title: String,
     url: String,
     episodes: Vec<Episode>,
     last_checked: DateTime<UTC>,
@@ -127,15 +128,23 @@ impl Podcast {
                         &self.url))
         }
     }
+}
 
-    /// Download all episodes not already downloaded.
-    pub fn download(&mut self) -> Result<()> {
-        println!("Downloading podcast: {:?}", self.title);
-        let p = Path::new(&self.title);
-        for e in self.episodes.iter_mut() {
-            e.download(p, &self.title).chain_err(|| "Download failed.")?;
-        }
-        Ok(())
+impl IntoIterator for Podcast {
+    type Item = Episode;
+    type IntoIter = ::std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.episodes.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut Podcast {
+    type Item = &'a mut Episode;
+    type IntoIter = slice::IterMut<'a, Episode>;
+
+    fn into_iter(mut self) -> Self::IntoIter {
+        self.episodes.iter_mut()
     }
 }
 
