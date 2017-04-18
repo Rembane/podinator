@@ -37,6 +37,15 @@ impl Database {
     pub fn add(&mut self, url: &str) {
         self.0.push(Podcast::new(" ", url));
     }
+
+    /// Download all the podcasts in the database.
+    pub fn download(&mut self) -> Result<()> {
+        for mut p in self.0.iter_mut() {
+            p.get_rss().chain_err(|| "Downloading RSS failed horribly.")?;
+            p.download().chain_err(|| "Downloading podcast failed horribly.")?;
+        }
+        Ok(())
+    }
 }
 
 impl IntoIterator for Database {

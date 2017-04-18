@@ -54,12 +54,10 @@ fn run() -> Result<()> {
             }
         }
         ("download", Some(_)) => {
-            for mut p in db.into_iter() {
-                p.get_rss().chain_err(|| "Downloading RSS failed horribly.")?;
-                p.download().chain_err(|| "Downloading podcast failed horribly.")?;
-            }
+            db.download().chain_err(|| "Tried to download podcast, world went boom.")?;
+            db.to_file(db_path).chain_err(|| "Tried to save podcast database to file. Something failed.")?;
         }
-        (_, _) => {},
+        _ => {},
     }
     Ok(())
 }
