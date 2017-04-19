@@ -171,18 +171,10 @@ impl Episode {
             let mut web = reqwest::get(&self.url).chain_err(|| format!("Couldn't find url: {:?}", self.url))?;
             create_dir_all(base)?;
             let p = base.join(Path::new(&file_name));
-            let mut f = File::create(&p).expect(&format!("Unable to create file with path: {:?}",
-                                                         &p));
-            let mut buf = Vec::with_capacity(1024 * 1024); // One MB chunks!
-            loop {
-                match web.read(&mut buf) {
-                    Ok(0) => break,
-                    Ok(_) => {
-                        f.write(&buf).unwrap();
-                    }
-                    Err(_) => break,
-                }
-            }
+            let mut f = File::create(&p)?;
+            let mut buf = Vec::new();
+            web.read_to_end(&mut buf)?;
+            f.write_all(&buf)?;
             self.downloaded = Some(UTC::now());
             self.local_file_name = Some(file_name);
         } else {
