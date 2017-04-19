@@ -5,3 +5,4 @@ This is a project for managing the subscriptions of podcasts I'm listening to, a
 ## TODO
 
 1. Logging
+1. Support for etags.

@@ -39,14 +39,14 @@ impl Database {
     }
 
     /// Download all the podcasts in the database.
-    pub fn download(&mut self) -> Result<()> {
+    pub fn download(&mut self, pod_path: &Path) -> Result<()> {
         for mut p in self.0.iter_mut() {
             p.get_rss().chain_err(|| "Downloading RSS failed horribly.")?;
             println!("Downloading podcast: {:?}", p.title);
             let podcast_title = p.title.clone();
-            let path = Path::new(&podcast_title);
+            let path = pod_path.join(Path::new(&podcast_title));
             for mut e in p.into_iter() {
-                e.download(path, &podcast_title).chain_err(|| "Podcast download failed.")?;
+                e.download(&path, &podcast_title).chain_err(|| "Podcast download failed.")?;
             }
         }
         Ok(())
