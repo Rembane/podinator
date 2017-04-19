@@ -9,3 +9,4 @@ This is a project for managing the subscriptions of podcasts I'm listening to, a
 1. Make the podinator work with mixed feeds, like for instance: https://annien.wordpress.com/
 1. Make it possible to mark episodes as listened to.
 1. Web interface.
+1. Create a "parse-all-feed-files-and-see-if-something-breaks"-command for testing new feeds.
