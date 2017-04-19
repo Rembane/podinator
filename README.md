@@ -14,3 +14,4 @@ This is a project for managing the subscriptions of podcasts I'm listening to, a
 1. `./podinator list`
   1. Make it human readable 
   1. Let us look at single podcasts and their episodes.
+1. Find out why podcast episode files are created but not filled with content.
