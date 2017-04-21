@@ -5,6 +5,8 @@ use quick_xml::reader::Reader;
 use quick_xml::events::Event;
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Display;
 use std::fs::{File, create_dir_all, remove_file};
 use std::io::{BufReader, Read, Write};
 use std::path::Path;
@@ -134,6 +136,16 @@ impl Podcast {
     }
 }
 
+impl Display for Podcast {
+    fn fmt(&self, f: &mut fmt::Formatter) -> ::core::result::Result<(), ::core::fmt::Error> {
+        write!(f, "{}\n{} {}\n", self.title, self.url, self.last_checked)?;
+        for e in &self.episodes {
+            e.fmt(f)?;
+        }
+        Ok(())
+    }
+}
+
 impl IntoIterator for Podcast {
     type Item = Episode;
     type IntoIter = ::std::vec::IntoIter<Self::Item>;
@@ -184,6 +196,25 @@ impl Episode {
             println!("This episode has already been downloaded. {:?}", self.title);
         }
         Ok(())
+    }
+}
+
+fn option_date_fmt(x: Option<DateTime<UTC>>, f: &mut fmt::Formatter) -> ::core::result::Result<(), ::core::fmt::Error> {
+     match x {
+        None => write!(f, ""),
+        Some(d) => write!(f, "{}", d.format("%FT%R").to_string())
+    }
+}
+
+impl Display for Episode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> ::core::result::Result<(), ::core::fmt::Error> {
+        write!(f, "    {}\n", self.title)?;
+        option_date_fmt(Some(self.pub_date), f)?;
+        write!(f, "\t")?;
+        option_date_fmt(self.downloaded, f)?;
+        write!(f, "\t")?;
+        option_date_fmt(self.listened, f)?;
+        write!(f, "\n")
     }
 }
 

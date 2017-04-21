@@ -91,7 +91,7 @@ fn run() -> Result<()> {
         }
         ("list", Some(_)) => {
             for p in db {
-                println!("{:?}", p);
+                println!("{}", p);
             }
         }
         ("download", Some(_)) => {
