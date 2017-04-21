@@ -72,15 +72,12 @@ impl Podcast {
                         }
                     }
                     Ok(Event::Empty(ref e)) => {
-                        match (reader.decode(e.name()).to_lowercase().as_str(), current_state) {
-                            ("enclosure", States::ParsingItem) => {
-                                part_hash.insert("url", e.attributes()
-                                                 .map(|a| a.unwrap())
-                                                 .find(|a| a.key == b"url")
-                                                 .map(|a| reader.decode(a.unescaped_value().unwrap().borrow()).into_owned())
-                                                 .expect("I couldn't find an URL in this enclosure."));
-                            }
-                            _ => (),
+                        if let ("enclosure", States::ParsingItem) = (reader.decode(e.name()).to_lowercase().as_str(), current_state) {
+                            part_hash.insert("url", e.attributes()
+                                             .map(|a| a.unwrap())
+                                             .find(|a| a.key == b"url")
+                                             .map(|a| reader.decode(a.unescaped_value().unwrap().borrow()).into_owned())
+                                             .expect("I couldn't find an URL in this enclosure."));
                         }
                     }
                     Ok(Event::Text(e)) => {
@@ -96,20 +93,16 @@ impl Podcast {
                         match (reader.decode(e.name()).to_lowercase().as_str(), current_state) {
                             ("item", States::ParsingItem) => {
                                 println!("This is the current part_hash: {:?}", part_hash);
-                                {
-                                    // Scope cheat to let me use the closure getter.
-                                    let getter = |key| part_hash.get(key).unwrap();
-                                    self.episodes
-                                        .push(Episode::new(getter("title"),
-                                                          getter("url"),
-                                                          str_to_date(getter("pub_date"))));
-                                }
+                                self.episodes
+                                    .push(Episode::new(&part_hash["title"],
+                                                      &part_hash["url"],
+                                                      str_to_date(&part_hash["pub_date"])));
                                 part_hash.clear();
                                 current_state = States::Other;
                             }
-                            ("title", States::ParsingTitle) => current_state = States::ParsingItem,
+                            ("title", States::ParsingTitle)
+                                | ("pubdate", States::ParsingPubDate) => current_state = States::ParsingItem,
                             ("title", States::ParsingPodcastTitle) => current_state = States::Other,
-                            ("pubdate", States::ParsingPubDate) => current_state = States::ParsingItem,
                             _ => (),
                         }
                     }
@@ -163,7 +156,7 @@ impl Episode {
     /// Download this episode if it hasn't already been downloaded.
     pub fn download(&mut self, base: &Path, podcast_title: &str) -> Result<()> {
         if self.downloaded.is_none() {
-            let file_name = match self.url.rsplit("/").next() {
+            let file_name = match self.url.rsplit('/').next() {
                 Some(s) => format!("{}_{}_{}", podcast_title, self.pub_date.format("%FT%R").to_string(), s),
                 None => bail!(format!("Your URL doesn't contain any slashes, strange, eh? {:?}", self.url)),
             };

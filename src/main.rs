@@ -53,7 +53,7 @@ fn run() -> Result<()> {
         Ok(mut fh) => {
             let mut s = String::new();
             fh.read_to_string(&mut s)?;
-            toml::from_str(&mut s)?
+            toml::from_str(&s)?
         }
         Err(_) => { // Default configuration.
             Config {
@@ -63,13 +63,11 @@ fn run() -> Result<()> {
         }
     };
 
-    match matches.value_of("DBPATH") {
-        Some(p) => { config.db_path = String::from(p); }
-        _       => ()
+    if let Some(p) = matches.value_of("DBPATH") {
+         config.db_path = String::from(p);
     }
-    match matches.value_of("PODPATH") {
-        Some(p) => { config.podcast_path = String::from(p); }
-        _       => ()
+    if let Some(p) = matches.value_of("PODPATH") {
+        config.podcast_path = String::from(p);
     }
 
     let db_path = Path::new(&config.db_path);
@@ -86,7 +84,7 @@ fn run() -> Result<()> {
             db.to_file(db_path).chain_err(|| "Writing to database failed.")?;
         }
         ("list", Some(_)) => {
-            for p in db.into_iter() {
+            for p in db {
                 println!("{:?}", p);
             }
         }
