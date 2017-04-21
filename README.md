@@ -12,6 +12,5 @@ This is a project for managing the subscriptions of podcasts I'm listening to, a
 1. Web interface.
 1. Create a "parse-all-feed-files-and-see-if-something-breaks"-command for testing new feeds.
 1. `./podinator list`
-  1. Make it human readable 
+  1. Make it human readable
   1. Let us look at single podcasts and their episodes.
-1. Find out why podcast episode files are created but not filled with content.
