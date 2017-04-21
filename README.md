@@ -14,3 +14,4 @@ This is a project for managing the subscriptions of podcasts I'm listening to, a
 1. `./podinator list`
   1. Make it human readable
   1. Let us look at single podcasts and their episodes.
+1. Limit the used space. To, for instance 1 Gb or something.
