@@ -47,6 +47,12 @@ fn run() -> Result<()> {
         (@subcommand download =>
             (about: "Download all podcasts that haven't been downloaded yet.")
         )
+        (@subcommand episodes =>
+            (about: "Manages episodes.")
+            (@subcommand clear =>
+                (about: "Deletes all episodes.")
+            )
+        )
     ).get_matches();
 
     let mut config: Config = match File::open(matches.value_of("CONFIG").unwrap_or("podinator.toml")) {
@@ -91,6 +97,11 @@ fn run() -> Result<()> {
         ("download", Some(_)) => {
             db.download(Path::new(&config.podcast_path)).chain_err(|| "Tried to download podcast, world went boom.")?;
             db.to_file(db_path).chain_err(|| "Tried to save podcast database to file. Something failed.")?;
+        }
+        ("episodes", Some(submatch)) => {
+            if let ("clear", Some(_)) = submatch.subcommand() {
+                db.clear_episodes();
+            }
         }
         _ => {},
     }

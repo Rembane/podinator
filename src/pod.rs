@@ -5,7 +5,7 @@ use quick_xml::reader::Reader;
 use quick_xml::events::Event;
 use std::borrow::Borrow;
 use std::collections::HashMap;
-use std::fs::{File, create_dir_all};
+use std::fs::{File, create_dir_all, remove_file};
 use std::io::{BufReader, Read, Write};
 use std::path::Path;
 
@@ -121,6 +121,17 @@ impl Podcast {
                         &self.url))
         }
     }
+
+    pub fn clear_episodes(&mut self) {
+        println!("Clearing episodes.");
+        for e in &self.episodes {
+            if let Some(ref f) = e.local_file_name {
+                println!("Deleting file: {:?}", f);
+                remove_file(Path::new(&f)).unwrap();
+            }
+        }
+        self.episodes.clear();
+    }
 }
 
 impl IntoIterator for Podcast {
@@ -163,8 +174,7 @@ impl Episode {
             println!("Downloading: {:?} from {:?}", self.title, self.url);
             let mut web = reqwest::get(&self.url).chain_err(|| format!("Couldn't find url: {:?}", self.url))?;
             create_dir_all(base)?;
-            let p = base.join(Path::new(&file_name));
-            let mut f = File::create(&p)?;
+            let mut f = File::create(&base.join(Path::new(&file_name)))?;
             let mut buf = Vec::new();
             web.read_to_end(&mut buf)?;
             f.write_all(&buf)?;

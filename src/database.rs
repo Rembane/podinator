@@ -51,6 +51,13 @@ impl Database {
         }
         Ok(())
     }
+
+    /// Delete all episodes.
+    pub fn clear_episodes(&mut self) {
+        for mut p in &mut self.0 {
+            p.clear_episodes();
+        }
+    }
 }
 
 impl IntoIterator for Database {
