@@ -6,9 +6,12 @@ authors = ["Andreas Ekeroot <andeke@gmail.com>"]
 license = "BSD-3-Clause"
 
 [dependencies]
+chan = "0.1.19"
+chan-signal = "0.2.0"
 clap = "~2.23.2"
+hyper = { git = "https://github.com/hyperium/hyper" }
+hyper-tls = { git = "https://github.com/hyperium/hyper-tls" }
 itertools = "0.6.0"
-reqwest = "0.5.1"
 rmp-serde = "0.12.4"
 quick-xml = "0.7.0"
 serde = "0.9.14"

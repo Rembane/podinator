@@ -5,5 +5,6 @@ error_chain! {
         IO(::std::io::Error);
         TOML(::toml::de::Error);
         Display(::core::fmt::Error);
+        //Poison(::std::sync::PoisonError<::database::Database>);
     }
 }

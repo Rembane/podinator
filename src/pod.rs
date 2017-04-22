@@ -24,7 +24,7 @@ enum States {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Episode {
-    title: String,
+    pub title: String,
     url: String,
     pub_date: DateTime<UTC>,
     downloaded: Option<DateTime<UTC>>,
