@@ -184,7 +184,7 @@ impl Episode {
                 None => bail!(format!("Your URL doesn't contain any slashes, strange, eh? {:?}", self.url)),
             };
             println!("Downloading: {:?} from {:?}", self.title, self.url);
-            let mut web = reqwest::get(&self.url).chain_err(|| format!("Couldn't find url: {:?}", self.url))?;
+            let mut web = reqwest::get(&self.url).chain_err(|| format!("Got error when trying to download url: {:?}", self.url))?;
             create_dir_all(base)?;
             let mut f = File::create(&base.join(Path::new(&file_name)))?;
             let mut buf = Vec::new();
@@ -193,7 +193,7 @@ impl Episode {
             self.downloaded = Some(UTC::now());
             self.local_file_name = Some(file_name);
         } else {
-            println!("This episode has already been downloaded. {:?}", self.title);
+            println!("This episode has already been downloaded: {:?}", self.title);
         }
         Ok(())
     }
